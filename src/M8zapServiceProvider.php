@@ -31,7 +31,10 @@ class M8zapServiceProvider extends ServiceProvider
         // Servidor MCP: o M8Zap (e outros clientes MCP) chamam as ferramentas daqui.
         // Sem o grupo "web": nada de sessao nem CSRF numa chamada entre servidores.
         if ($rotaMcp = config('m8zap.mcp.rota')) {
-            Route::middleware([AutenticarMcp::class])
+            Route::middleware([
+                \Illuminate\Routing\Middleware\ThrottleRequests::class.':'.config('m8zap.mcp.limite', '300,1'),
+                AutenticarMcp::class,
+            ])
                 ->match(['get', 'post', 'delete'], $rotaMcp, McpController::class)
                 ->name('m8zap.mcp');
         }

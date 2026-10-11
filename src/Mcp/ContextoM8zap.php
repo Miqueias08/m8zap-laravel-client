@@ -19,6 +19,8 @@ final class ContextoM8zap
         public readonly ?string $telefone,
         public readonly ?string $nome,
         public readonly ?int $conversaId,
+        public readonly ?string $instancia,
+        public readonly ?string $numeroEmpresa,
         public readonly ?int $empresaId,
         public readonly ?string $empresaNome,
         public readonly bool $simulacao,
@@ -37,12 +39,30 @@ final class ContextoM8zap
             telefone: isset($contato['telefone']) ? preg_replace('/\D/', '', (string) $contato['telefone']) : null,
             nome: $contato['nome'] ?? null,
             conversaId: isset($contato['conversa_id']) ? (int) $contato['conversa_id'] : null,
+            instancia: isset($contato['instancia']) ? (string) $contato['instancia'] : null,
+            numeroEmpresa: isset($contato['numero_empresa']) ? preg_replace('/\D/', '', (string) $contato['numero_empresa']) : null,
             empresaId: isset($empresa['id']) ? (int) $empresa['id'] : null,
             empresaNome: $empresa['nome'] ?? null,
             simulacao: (bool) ($contato['simulacao'] ?? false),
             confirmadoPeloCliente: (bool) ($contato['confirmado_pelo_cliente'] ?? false),
             request: $request,
         );
+    }
+
+    /**
+     * Instancia (numero da empresa no M8Zap) que recebeu a conversa.
+     *
+     * SaaS com varios clientes: use para descobrir de qual cliente do SaaS e o
+     * atendimento e filtre TODA consulta por ele, alem do telefone. So o
+     * telefone nao basta — a mesma pessoa pode ser cliente de duas empresas.
+     */
+    public function instanciaObrigatoria(): string
+    {
+        if (! $this->instancia) {
+            throw new FerramentaException('Nao foi possivel identificar a empresa deste atendimento.');
+        }
+
+        return $this->instancia;
     }
 
     /**

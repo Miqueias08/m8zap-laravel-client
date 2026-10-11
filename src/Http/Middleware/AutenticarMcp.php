@@ -4,6 +4,7 @@ namespace M8zap\Client\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -11,7 +12,8 @@ use Symfony\Component\HttpFoundation\Response;
  *
  *  1. Origin presente e fora da lista -> 403 (protecao contra DNS rebinding, exigida pela spec).
  *  2. X-M8zap-Signature valida (HMAC com M8ZAP_MCP_SECRET) -> chamada do M8Zap,
- *     com dados do contato confiaveis.
+ *     com dados do contato confiaveis. Formato: t=<epoch>,n=<nonce>,v1=<hmac>,
+ *     HMAC-SHA256 de "t.n.corpo". Cada assinatura vale uma vez (anti-replay).
  *  3. Senao, Authorization: Bearer M8ZAP_MCP_TOKEN -> outros clientes MCP
  *     (Claude Desktop, testes), sem dados de contato.
  */
@@ -53,12 +55,19 @@ class AutenticarMcp
         parse_str(str_replace(',', '&', (string) $request->header('X-M8zap-Signature')), $partes);
 
         $t = (int) ($partes['t'] ?? 0);
+        $nonce = (string) ($partes['n'] ?? '');
         $v1 = (string) ($partes['v1'] ?? '');
+        $tolerancia = (int) config('m8zap.mcp.tolerancia', 300);
 
-        if ($t <= 0 || $v1 === '' || abs(time() - $t) > (int) config('m8zap.mcp.tolerancia', 300)) {
+        if ($t <= 0 || $v1 === '' || ! preg_match('/^[A-Za-z0-9]{16,64}$/', $nonce) || abs(time() - $t) > $tolerancia) {
             return false;
         }
 
-        return hash_equals(hash_hmac('sha256', $t.'.'.$request->getContent(), $segredo), $v1);
+        if (! hash_equals(hash_hmac('sha256', $t.'.'.$nonce.'.'.$request->getContent(), $segredo), $v1)) {
+            return false;
+        }
+
+        // Uma chamada capturada nao pode ser reenviada (ex.: repetir um agendamento).
+        return Cache::add('m8zap-mcp-nonce:'.hash('sha256', $nonce), 1, now()->addSeconds($tolerancia * 2 + 60));
     }
 }

@@ -45,6 +45,9 @@ return [
         // Tolerancia do timestamp da assinatura, em segundos (anti replay).
         'tolerancia' => (int) env('M8ZAP_MCP_TOLERANCIA', 300),
 
+        // Limite de chamadas por minuto, por IP ("maximo,minutos").
+        'limite' => env('M8ZAP_MCP_LIMITE', '300,1'),
+
         // Origins de navegador aceitas (chamadas servidor-a-servidor nao enviam Origin).
         'origens' => array_filter(explode(',', (string) env('M8ZAP_MCP_ORIGENS', ''))),
 
