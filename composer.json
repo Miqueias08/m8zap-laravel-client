@@ -1,0 +1,30 @@
+{
+    "name": "m8zap/laravel-client",
+    "description": "Cliente Laravel da API de integracao do M8Zap (envio de WhatsApp a partir de outros sistemas).",
+    "type": "library",
+    "license": "proprietary",
+    "require": {
+        "php": "^8.2",
+        "illuminate/support": "^11.0|^12.0",
+        "illuminate/http": "^11.0|^12.0",
+        "illuminate/bus": "^11.0|^12.0",
+        "guzzlehttp/guzzle": "^7.8"
+    },
+    "autoload": {
+        "psr-4": {
+            "M8zap\\Client\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "M8zap\\Client\\M8zapServiceProvider"
+            ],
+            "aliases": {
+                "M8zap": "M8zap\\Client\\Facades\\M8zap"
+            }
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
